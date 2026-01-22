@@ -1,9 +1,10 @@
 import type { GuildMember } from "discord.js";
+import type { CooldownRegistry } from "../../utils/cooldown.js";
 
 export type BaseCommandOptions = {
   name: string;
   allowedRoleIds?: string[];
-  cooldownSeconds?: number;
+  cooldownRegistry?: CooldownRegistry;
 };
 
 export type CommandOptions = Omit<BaseCommandOptions, "name">;
@@ -13,12 +14,12 @@ type RoleMember = GuildMember | { roles: string[] };
 export abstract class BaseCommand {
   readonly name: string;
   readonly allowedRoleIds: string[];
-  readonly cooldownSeconds?: number;
+  readonly cooldownRegistry?: CooldownRegistry;
 
   protected constructor(options: BaseCommandOptions) {
     this.name = options.name;
     this.allowedRoleIds = options.allowedRoleIds ?? [];
-    this.cooldownSeconds = options.cooldownSeconds;
+    this.cooldownRegistry = options.cooldownRegistry;
   }
 
   canRun(member: RoleMember | null): boolean {

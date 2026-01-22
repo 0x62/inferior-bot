@@ -16,9 +16,9 @@ const formatEntry = (entry: LogErrorEntry): string => {
 export class LogErrorsCommand extends SlashCommand {
   constructor(options: CommandOptions = {}) {
     super({
-      name: "logerrors",
+      name: "log",
       allowedRoleIds: options.allowedRoleIds,
-      cooldownSeconds: options.cooldownSeconds
+      cooldownRegistry: options.cooldownRegistry,
     });
   }
 
@@ -31,7 +31,7 @@ export class LogErrorsCommand extends SlashCommand {
           .setName("limit")
           .setDescription("How many errors to show")
           .setMinValue(1)
-          .setMaxValue(10)
+          .setMaxValue(10),
       );
   }
 
@@ -43,7 +43,7 @@ export class LogErrorsCommand extends SlashCommand {
     if (entries.length === 0) {
       await context.respond({
         content: "No recent errors.",
-        flags: MessageFlags.Ephemeral
+        flags: MessageFlags.Ephemeral,
       });
       return;
     }

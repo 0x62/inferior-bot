@@ -19,7 +19,7 @@ export class SlowUserCommand extends SlashCommand {
     super({
       name: "slowuser",
       allowedRoleIds: options.allowedRoleIds,
-      cooldownSeconds: options.cooldownSeconds
+      cooldownRegistry: options.cooldownRegistry
     });
     this.slowModeService = slowModeService;
   }

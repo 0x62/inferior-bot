@@ -30,7 +30,7 @@ export abstract class AnswerBase extends MessageCommand {
     super({
       name: toCommandName(derivedName),
       allowedRoleIds: options.allowedRoleIds,
-      cooldownSeconds: options.cooldownSeconds,
+      cooldownRegistry: options.cooldownRegistry,
       requiresReply: true
     });
     this.llm = llm;

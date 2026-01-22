@@ -15,7 +15,7 @@ export class ModHelpCommand extends SlashCommand {
     super({
       name: "modhelp",
       allowedRoleIds: options.allowedRoleIds,
-      cooldownSeconds: options.cooldownSeconds
+      cooldownRegistry: options.cooldownRegistry
     });
     this.entries = entries;
   }
