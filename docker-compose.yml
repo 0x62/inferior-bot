@@ -5,8 +5,16 @@ services:
     image: ghcr.io/0x62/inferior-bot:master
     restart: unless-stopped
     env_file:
-      - .env
+      - stack.env
     environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      DISCORD_GUILD_IDS: ${DISCORD_GUILD_IDS}
+      MODERATOR_ROLE_IDS: ${MODERATOR_ROLE_IDS}
       DATABASE_PATH: /data/bot.db
+      LOG_LEVEL: info
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      LLM_MODEL: gpt-4o-mini
+      LLM_BASE_URL: https://api.openai.com/v1
     volumes:
       - ./data:/data
