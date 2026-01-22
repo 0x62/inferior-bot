@@ -11,7 +11,7 @@ export class GrokClient {
   private readonly provider: ReturnType<typeof createXai>;
 
   constructor(config: BotConfig, logger: Logger) {
-    this.apiKey = config.grok.apiKey;
+    this.apiKey = config.grok.apiKey ?? process.env.XAI_API_KEY ?? process.env.GROK_API_KEY;
     this.model = config.grok.model;
     this.baseUrl = config.grok.baseUrl;
     this.logger = logger;
