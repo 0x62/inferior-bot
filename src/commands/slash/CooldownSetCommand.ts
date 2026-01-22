@@ -7,7 +7,6 @@ import type { GlobalCooldownRegistry } from "../../utils/cooldown.js";
 
 export class CooldownSetCommand extends SlashCommand {
   private readonly globalCooldowns: GlobalCooldownRegistry;
-  private readonly registryNames: string[];
 
   constructor(globalCooldowns: GlobalCooldownRegistry, options: CommandOptions = {}) {
     super({
@@ -16,7 +15,6 @@ export class CooldownSetCommand extends SlashCommand {
       cooldownRegistry: options.cooldownRegistry
     });
     this.globalCooldowns = globalCooldowns;
-    this.registryNames = globalCooldowns.listNames();
   }
 
   build(): SlashCommandBuilder {
@@ -28,7 +26,7 @@ export class CooldownSetCommand extends SlashCommand {
           .setName("registry")
           .setDescription("Cooldown registry name")
           .setRequired(true);
-        for (const name of this.registryNames) {
+        for (const name of this.globalCooldowns.listNames()) {
           option.addChoices({ name, value: name });
         }
         return option;
