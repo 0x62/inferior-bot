@@ -61,6 +61,17 @@ export const initSqlite = (databasePath: string): Database.Database => {
       updated_at INTEGER NOT NULL,
       UNIQUE (guild_id, user_id, registry_name)
     );
+    CREATE TABLE IF NOT EXISTS command_usage (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      guild_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      command_name TEXT NOT NULL,
+      command_type TEXT NOT NULL,
+      parameters TEXT NOT NULL,
+      channel_id TEXT,
+      message_id TEXT,
+      created_at INTEGER NOT NULL
+    );
   `);
   return db;
 };

@@ -4,6 +4,7 @@ import type { MessageCommandContext } from "../base/MessageCommand.js";
 import type { CommandOptions } from "../base/BaseCommand.js";
 import type { GrokClient } from "../../services/GrokClient.js";
 import type { AiBanService } from "../../services/AiBanService.js";
+import { CommandError } from "../../logging/LogError.js";
 
 export class ContextCommand extends MessageCommand {
   private readonly grok: GrokClient;
@@ -45,7 +46,7 @@ export class ContextCommand extends MessageCommand {
     }
 
     if (!this.grok.isConfigured()) {
-      throw new Error("Grok is not configured.");
+      throw new CommandError("Grok is not configured.");
     }
 
     if (!message.guildId) {
@@ -58,7 +59,7 @@ export class ContextCommand extends MessageCommand {
       message.author.id
     );
     if (isBanned) {
-      throw new Error("User is blocked from LLM usage.");
+      throw new CommandError("User is blocked from LLM usage.");
     }
 
     let response = "";

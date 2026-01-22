@@ -16,7 +16,10 @@ export class WikipediaService {
 
     const searchResponse = await fetch(searchUrl.toString());
     if (!searchResponse.ok) {
-      throw new Error(`Wikipedia search failed with ${searchResponse.status}`);
+      throw new ServiceError(
+        `Wikipedia search failed with ${searchResponse.status}`,
+        { cause: new Error(searchResponse.statusText) }
+      );
     }
 
     const searchData = (await searchResponse.json()) as {
@@ -54,3 +57,4 @@ export class WikipediaService {
     };
   }
 }
+import { ServiceError } from "../logging/LogError.js";

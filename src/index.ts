@@ -11,6 +11,7 @@ import { LlmClient } from "./services/LlmClient.js";
 import { AiBanService } from "./services/AiBanService.js";
 import { GrokClient } from "./services/GrokClient.js";
 import { CooldownOverrideService } from "./services/CooldownOverrideService.js";
+import { CommandUsageService } from "./services/CommandUsageService.js";
 import { CooldownRegistry, GlobalCooldownRegistry } from "./utils/cooldown.js";
 import { SlowUserCommand } from "./commands/slash/SlowUserCommand.js";
 import { UnslowUserCommand } from "./commands/slash/UnslowUserCommand.js";
@@ -47,16 +48,20 @@ const client = new Client({
 });
 
 const registry = new CommandRegistry();
+const cooldownOverrideService = new CooldownOverrideService(db);
+const commandUsageService = new CommandUsageService(db);
+const globalCooldowns = new GlobalCooldownRegistry();
+const llmCooldown = new CooldownRegistry("llm", 120);
+globalCooldowns.register(llmCooldown);
+
 const slowModeService = new SlowModeService(db, logger);
 const reminderService = new ReminderService(db, logger, client);
 const aiBanService = new AiBanService(db);
 const wikipediaService = new WikipediaService();
+
 const llmClient = new LlmClient(config, logger);
 const grokClient = new GrokClient(config, logger);
-const cooldownOverrideService = new CooldownOverrideService(db);
-const globalCooldowns = new GlobalCooldownRegistry();
-const llmCooldown = new CooldownRegistry("llm", 120);
-globalCooldowns.register(llmCooldown);
+
 const startedAt = Date.now();
 const allowedGuildIds = new Set(config.guildIds);
 const isGuildAllowed = (guildId?: string | null): boolean => {
@@ -219,6 +224,7 @@ client.on("interactionCreate", async (interaction) => {
     logger,
     config,
     db,
+    commandUsage: commandUsageService
   });
 });
 
@@ -234,6 +240,7 @@ client.on("messageCreate", async (message) => {
     logger,
     config,
     db,
+    commandUsage: commandUsageService
   });
 });
 

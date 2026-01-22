@@ -2,6 +2,7 @@ import type { Logger } from "winston";
 import { generateText } from "ai";
 import { createXai } from "@ai-sdk/xai";
 import type { BotConfig } from "../config.js";
+import { ServiceError } from "../logging/LogError.js";
 
 export class GrokClient {
   private readonly apiKey?: string;
@@ -27,7 +28,7 @@ export class GrokClient {
 
   async fetchContext(message: string): Promise<string> {
     if (!this.apiKey) {
-      throw new Error("Grok API key is not configured.");
+      throw new ServiceError("Grok API key is not configured.");
     }
 
     try {
@@ -46,12 +47,14 @@ export class GrokClient {
       });
       const content = text.trim();
       if (!content) {
-        throw new Error("Grok response was empty.");
+        throw new ServiceError("Grok response was empty.");
       }
       return content;
     } catch (error) {
-      this.logger.error("Grok request failed: %s", String(error));
-      throw error;
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      throw new ServiceError("Grok request failed.", { cause: error });
     }
   }
 }
