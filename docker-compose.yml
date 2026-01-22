@@ -1,0 +1,12 @@
+version: "3.9"
+
+services:
+  discord-bot:
+    image: ghcr.io/0x62/inferior-bot:master
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_PATH: /data/bot.db
+    volumes:
+      - ./data:/data
