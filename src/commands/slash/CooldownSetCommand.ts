@@ -17,7 +17,7 @@ export class CooldownSetCommand extends SlashCommand {
     this.globalCooldowns = globalCooldowns;
   }
 
-  build(): SlashCommandBuilder {
+  build() {
     const builder = new SlashCommandBuilder()
       .setName(this.name)
       .setDescription("Set a per-user cooldown override for a registry.")

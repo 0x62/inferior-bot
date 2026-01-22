@@ -22,7 +22,7 @@ export class LogErrorsCommand extends SlashCommand {
     });
   }
 
-  build(): SlashCommandBuilder {
+  build() {
     return new SlashCommandBuilder()
       .setName(this.name)
       .setDescription("Show recent error logs.")

@@ -1,7 +1,8 @@
 import type {
   ChatInputCommandInteraction,
   InteractionReplyOptions,
-  SlashCommandBuilder
+  SlashCommandBuilder,
+  SlashCommandOptionsOnlyBuilder
 } from "discord.js";
 import type { BaseCommandOptions } from "./BaseCommand.js";
 import { BaseCommand } from "./BaseCommand.js";
@@ -17,6 +18,6 @@ export abstract class SlashCommand extends BaseCommand {
     super(options);
   }
 
-  abstract build(): SlashCommandBuilder;
+  abstract build(): SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
   abstract execute(context: SlashCommandContext): Promise<void>;
 }

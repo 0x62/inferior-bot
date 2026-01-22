@@ -1,5 +1,5 @@
 import { eq, lte } from "drizzle-orm";
-import type { Client, TextBasedChannel } from "discord.js";
+import type { Client } from "discord.js";
 import type { Logger } from "winston";
 import type { DatabaseClient } from "../db/index.js";
 import { reminders } from "../db/schema.js";
@@ -65,7 +65,7 @@ export class ReminderService {
           continue;
         }
 
-        const textChannel = channel as TextBasedChannel;
+        const textChannel = channel;
         const mention = `<@${reminder.userId}>`;
 
         const primaryId = reminder.parentMessageId ?? reminder.commandMessageId;
@@ -85,6 +85,10 @@ export class ReminderService {
           continue;
         }
 
+        if (!("send" in textChannel)) {
+          await this.deleteReminder(reminder.id);
+          continue;
+        }
         await textChannel.send(`${mention} reminder requested.`);
         await this.deleteReminder(reminder.id);
       } catch (error) {

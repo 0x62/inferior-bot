@@ -118,12 +118,13 @@ export class SlowModeService {
     if (now - lastNotice < 60 * 60 * 1000) return;
     this.noticeTracker.set(key, now);
 
-    if (!message.channel.isTextBased()) return;
-    await message.channel
+    const channel = message.channel;
+    if (!channel.isTextBased() || !("send" in channel)) return;
+    await channel
       .send(
         `<@${message.author.id}> you're on slow mode cooldown (${delaySeconds}s between messages).`
       )
-      .catch((error) => {
+      .catch((error: unknown) => {
         this.logger.warn("Failed to send slow mode notice: %s", String(error));
       });
   }

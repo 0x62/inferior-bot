@@ -17,7 +17,7 @@ export class CooldownClearCommand extends SlashCommand {
     this.globalCooldowns = globalCooldowns;
   }
 
-  build(): SlashCommandBuilder {
+  build() {
     const builder = new SlashCommandBuilder()
       .setName(this.name)
       .setDescription("Clear a per-user cooldown override.")

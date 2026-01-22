@@ -17,7 +17,7 @@ export class AiBanCommand extends SlashCommand {
     this.aiBanService = aiBanService;
   }
 
-  build(): SlashCommandBuilder {
+  build() {
     return new SlashCommandBuilder()
       .setName(this.name)
       .setDescription("Block a user from LLM commands.")

@@ -24,7 +24,7 @@ export class UnslowUserCommand extends SlashCommand {
     this.slowModeService = slowModeService;
   }
 
-  build(): SlashCommandBuilder {
+  build() {
     return new SlashCommandBuilder()
       .setName(this.name)
       .setDescription("Remove per-user slow mode restrictions.")
