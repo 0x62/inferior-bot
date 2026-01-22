@@ -23,7 +23,7 @@ export class GrokClient {
       throw new Error("Grok API key is not configured.");
     }
 
-    const response = await fetch(`${this.baseUrl}/chat/completions`, {
+    const response = await fetch(`${this.baseUrl}/responses`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -32,7 +32,7 @@ export class GrokClient {
       body: JSON.stringify({
         model: this.model,
         temperature: 0.3,
-        messages: [
+        input: [
           {
             role: "system",
             content:
@@ -44,7 +44,7 @@ export class GrokClient {
             content: `What is the context around this: ${message}`
           }
         ],
-        tools: [{ type: "live_search" }],
+        tools: [{ type: "web_search" }],
         tool_choice: "auto"
       })
     });
@@ -56,10 +56,36 @@ export class GrokClient {
     }
 
     const data = (await response.json()) as {
-      choices?: { message?: { content?: string } }[];
+      output_text?: string;
+      output?: {
+        type?: string;
+        role?: string;
+        content?: { type?: string; text?: string }[] | string;
+      }[];
     };
 
-    const content = data.choices?.[0]?.message?.content?.trim();
+    let content = data.output_text?.trim() ?? "";
+    if (!content && Array.isArray(data.output)) {
+      const textChunks: string[] = [];
+      for (const output of data.output) {
+        if (output?.type && output.type !== "message") continue;
+        const contentField = output?.content;
+        if (typeof contentField === "string") {
+          textChunks.push(contentField);
+          continue;
+        }
+        if (Array.isArray(contentField)) {
+          for (const entry of contentField) {
+            if (!entry) continue;
+            if (entry.type && entry.type !== "output_text" && entry.type !== "text") {
+              continue;
+            }
+            if (entry.text) textChunks.push(entry.text);
+          }
+        }
+      }
+      content = textChunks.join("").trim();
+    }
     if (!content) {
       throw new Error("Grok response was empty.");
     }
