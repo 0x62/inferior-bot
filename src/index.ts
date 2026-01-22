@@ -9,7 +9,7 @@ import { ReminderService } from "./services/ReminderService.js";
 import { WikipediaService } from "./services/WikipediaService.js";
 import { LlmClient } from "./services/LlmClient.js";
 import { AiBanService } from "./services/AiBanService.js";
-import { NewsService } from "./services/NewsService.js";
+import { GrokClient } from "./services/GrokClient.js";
 import { CooldownRegistry, GlobalCooldownRegistry } from "./utils/cooldown.js";
 import { SlowUserCommand } from "./commands/slash/SlowUserCommand.js";
 import { UnslowUserCommand } from "./commands/slash/UnslowUserCommand.js";
@@ -21,7 +21,6 @@ import { HelpCommand } from "./commands/slash/HelpCommand.js";
 import { ModHelpCommand } from "./commands/slash/ModHelpCommand.js";
 import { CooldownSetCommand } from "./commands/slash/CooldownSetCommand.js";
 import { CooldownClearCommand } from "./commands/slash/CooldownClearCommand.js";
-import { NewsCommand } from "./commands/slash/NewsCommand.js";
 import { AnswerCommand } from "./commands/message/AnswerCommand.js";
 import { AnswerDefinitiveCommand } from "./commands/message/AnswerDefinitiveCommand.js";
 import { QuestionCommand } from "./commands/message/QuestionCommand.js";
@@ -51,7 +50,7 @@ const reminderService = new ReminderService(db, logger, client);
 const aiBanService = new AiBanService(db);
 const wikipediaService = new WikipediaService();
 const llmClient = new LlmClient(config, logger);
-const newsService = new NewsService(logger);
+const grokClient = new GrokClient(config, logger);
 const globalCooldowns = new GlobalCooldownRegistry();
 const llmCooldown = new CooldownRegistry("llm", 120);
 globalCooldowns.register(llmCooldown);
@@ -98,7 +97,6 @@ registry.registerSlash(
     allowedRoleIds: config.moderatorRoleIds,
   }),
 );
-registry.registerSlash(new NewsCommand(newsService, llmClient, aiBanService));
 registry.registerSlash(new StatsCommand(startedAt));
 registry.registerSlash(
   new HelpCommand([
@@ -106,7 +104,6 @@ registry.registerSlash(
       title: "Slash Commands",
       entries: [
         { name: "/help", description: "Show available commands." },
-        { name: "/news", description: "Show BBC headlines or search by query." },
         { name: "/stats", description: "Show bot stats and reminder count." },
       ],
     },
@@ -153,7 +150,7 @@ registry.registerMessage(
   new AcronymCommand(llmClient, aiBanService, { cooldownRegistry: llmCooldown }),
 );
 registry.registerMessage(
-  new ContextCommand(newsService, llmClient, aiBanService, { cooldownRegistry: llmCooldown }),
+  new ContextCommand(grokClient, aiBanService, { cooldownRegistry: llmCooldown }),
 );
 
 client.once("clientReady", async () => {
