@@ -17,7 +17,7 @@ export class GrokClient {
     this.logger = logger;
     this.provider = createXai({
       apiKey: this.apiKey,
-      baseURL: this.baseUrl
+      baseURL: this.baseUrl,
     });
   }
 
@@ -35,13 +35,14 @@ export class GrokClient {
         model: this.provider.responses(this.model),
         prompt: `What is the context around this: ${message}`,
         tools: {
-          web_search: this.provider.tools.webSearch()
+          web_search: this.provider.tools.webSearch(),
         },
         toolChoice: "auto",
         temperature: 0.3,
         system:
           "Provide concise, confident background context using web search when helpful. " +
-          "Do not mention that you searched or reference the user or message directly."
+          "Do not mention that you searched or reference the user or message directly. " +
+          "Summarise the context in a few sentences. Do not reply with more than 500 words.",
       });
       const content = text.trim();
       if (!content) {
