@@ -39,11 +39,40 @@ export class StatsCommand extends SlashCommand {
   }
 
   async execute(context: SlashCommandContext): Promise<void> {
+    const interaction = context.interaction;
     const uptime = formatDuration(Date.now() - this.startedAt);
     const [row] = await context.db
       .select({ count: sql<number>`count(*)` })
       .from(reminders);
     const reminderCount = row?.count ?? 0;
+
+    const guildId = interaction.guildId ?? null;
+    const topUsers = await context.commandUsage.getTopUsers(5, guildId);
+    const topCommands = await context.commandUsage.getTopCommands(5, guildId);
+
+    const resolveUsername = async (userId: string): Promise<string> => {
+      const cachedMember = interaction.guild?.members.cache.get(userId);
+      if (cachedMember) return cachedMember.user.username;
+      const cachedUser = context.client.users.cache.get(userId);
+      if (cachedUser) return cachedUser.username;
+      try {
+        const user = await context.client.users.fetch(userId);
+        return user.username;
+      } catch {
+        return userId;
+      }
+    };
+
+    const topUserLines = await Promise.all(
+      topUsers.map(async (entry) => {
+        const name = await resolveUsername(entry.userId);
+        return `${name} — ${entry.count}`;
+      })
+    );
+
+    const topCommandLines = topCommands.map(
+      (entry) => `${entry.commandName} — ${entry.count}`
+    );
 
     const embed = new EmbedBuilder()
       .setTitle("Bot Stats")
@@ -53,6 +82,16 @@ export class StatsCommand extends SlashCommand {
           name: "Scheduled Reminders",
           value: String(reminderCount),
           inline: true
+        },
+        {
+          name: "Top Users",
+          value: topUserLines.length > 0 ? topUserLines.join("\n") : "No data",
+          inline: false
+        },
+        {
+          name: "Top Commands",
+          value: topCommandLines.length > 0 ? topCommandLines.join("\n") : "No data",
+          inline: false
         }
       )
       .setColor(0x2f9e44);

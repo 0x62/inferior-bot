@@ -47,3 +47,15 @@ export const cooldownOverrides = sqliteTable(
     )
   })
 );
+
+export const commandUsage = sqliteTable("command_usage", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  guildId: text("guild_id").notNull(),
+  userId: text("user_id").notNull(),
+  commandName: text("command_name").notNull(),
+  commandType: text("command_type").notNull(),
+  parameters: text("parameters").notNull(),
+  channelId: text("channel_id"),
+  messageId: text("message_id"),
+  createdAt: integer("created_at").notNull()
+});

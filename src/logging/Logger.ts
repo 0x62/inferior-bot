@@ -6,6 +6,18 @@ export type LogErrorEntry = {
   level?: string;
   message?: string;
   stack?: string;
+  errorName?: string;
+  errorMessage?: string;
+  underlyingErrorName?: string;
+  underlyingErrorMessage?: string;
+  commandName?: string;
+  commandType?: string;
+  invokerId?: string;
+  invokerUsername?: string;
+  invocationGuildId?: string;
+  invocationChannelId?: string;
+  invocationMessageId?: string;
+  invocationContent?: string;
   [key: string]: unknown;
 };
 
@@ -72,5 +84,18 @@ export class Logger {
   static getRecentErrors(limit = 10): LogErrorEntry[] {
     const sliceStart = Math.max(Logger.errorBuffer.length - limit, 0);
     return Logger.errorBuffer.slice(sliceStart);
+  }
+
+  static getErrorPage(
+    page = 1,
+    pageSize = 10
+  ): { entries: LogErrorEntry[]; page: number; totalPages: number; total: number } {
+    const total = Logger.errorBuffer.length;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const safePage = Math.min(Math.max(page, 1), totalPages);
+    const end = total - (safePage - 1) * pageSize;
+    const start = Math.max(end - pageSize, 0);
+    const entries = Logger.errorBuffer.slice(start, end).reverse();
+    return { entries, page: safePage, totalPages, total };
   }
 }

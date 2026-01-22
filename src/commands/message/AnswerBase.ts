@@ -4,6 +4,7 @@ import type { MessageCommandContext } from "../base/MessageCommand.js";
 import type { CommandOptions } from "../base/BaseCommand.js";
 import type { LlmClient } from "../../services/LlmClient.js";
 import type { AiBanService } from "../../services/AiBanService.js";
+import { CommandError } from "../../logging/LogError.js";
 
 const renderContext = (messages: Message[], label: string): string => {
   if (messages.length === 0) return `${label}: (none)`;
@@ -60,7 +61,7 @@ export abstract class AnswerBase extends MessageCommand {
     }
 
     if (!this.llm.isConfigured()) {
-      throw new Error("LLM is not configured.");
+      throw new CommandError("LLM is not configured.");
     }
 
     if (!message.guildId) {
@@ -73,7 +74,7 @@ export abstract class AnswerBase extends MessageCommand {
       message.author.id
     );
     if (isBanned) {
-      throw new Error("User is blocked from LLM usage.");
+      throw new CommandError("User is blocked from LLM usage.");
     }
 
     await message.react("✅").catch(() => null);

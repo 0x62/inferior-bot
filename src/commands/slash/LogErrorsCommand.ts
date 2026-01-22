@@ -3,15 +3,7 @@ import type { ChatInputCommandInteraction } from "discord.js";
 import { SlashCommand } from "../base/SlashCommand.js";
 import type { SlashCommandContext } from "../base/SlashCommand.js";
 import type { CommandOptions } from "../base/BaseCommand.js";
-import { Logger, type LogErrorEntry } from "../../logging/Logger.js";
-
-const formatEntry = (entry: LogErrorEntry): string => {
-  const timestamp = entry.timestamp ? new Date(entry.timestamp).toISOString() : "(no time)";
-  const message = String(entry.message ?? "(no message)")
-    .replace(/\s+/g, " ")
-    .slice(0, 200);
-  return `• ${timestamp} — ${message}`;
-};
+import { Logger } from "../../logging/Logger.js";
 
 export class LogErrorsCommand extends SlashCommand {
   constructor(options: CommandOptions = {}) {
@@ -28,17 +20,20 @@ export class LogErrorsCommand extends SlashCommand {
       .setDescription("Show recent error logs.")
       .addIntegerOption((option) =>
         option
-          .setName("limit")
-          .setDescription("How many errors to show")
+          .setName("page")
+          .setDescription("Page of errors to show (10 per page)")
           .setMinValue(1)
-          .setMaxValue(10),
+          .setMaxValue(50),
       );
   }
 
   async execute(context: SlashCommandContext): Promise<void> {
     const interaction: ChatInputCommandInteraction = context.interaction;
-    const limit = interaction.options.getInteger("limit") ?? 5;
-    const entries = Logger.getRecentErrors(limit).reverse();
+    const page = interaction.options.getInteger("page") ?? 1;
+    const { entries, page: resolvedPage, totalPages, total } = Logger.getErrorPage(
+      page,
+      10
+    );
 
     if (entries.length === 0) {
       await context.respond({
@@ -48,11 +43,43 @@ export class LogErrorsCommand extends SlashCommand {
       return;
     }
 
-    const embed = new EmbedBuilder()
-      .setTitle("Recent Errors")
-      .setDescription(entries.map(formatEntry).join("\n"))
-      .setColor(0xcc3b3b);
+    const embeds = entries.map((entry) => {
+      const title =
+        entry.errorName && entry.errorMessage
+          ? `${entry.errorName}: ${entry.errorMessage}`
+          : entry.message ?? "Error";
+      const commandLabel = entry.commandName
+        ? `${entry.commandType ?? "command"}:${entry.commandName}`
+        : "Unknown";
+      const underlying = entry.underlyingErrorName
+        ? `${entry.underlyingErrorName}: ${entry.underlyingErrorMessage ?? ""}`.trim()
+        : "None";
+      const invoker = entry.invokerUsername ?? entry.invokerId ?? "Unknown";
+      const link =
+        entry.invocationGuildId && entry.invocationChannelId && entry.invocationMessageId
+          ? `https://discord.com/channels/${entry.invocationGuildId}/${entry.invocationChannelId}/${entry.invocationMessageId}`
+          : null;
 
-    await context.respond({ embeds: [embed], flags: MessageFlags.Ephemeral });
+      const embed = new EmbedBuilder()
+        .setTitle(title)
+        .setColor(0xcc3b3b)
+        .addFields(
+          { name: "Command", value: commandLabel },
+          { name: "Underlying Error", value: underlying },
+          { name: "Invoker", value: invoker },
+          { name: "Invocation", value: link ? `[Jump](${link})` : "N/A" }
+        );
+
+      if (entry.timestamp) {
+        embed.setTimestamp(new Date(entry.timestamp));
+      }
+
+      embed.setFooter({
+        text: `Page ${resolvedPage}/${totalPages} • ${total} total`
+      });
+      return embed;
+    });
+
+    await context.respond({ embeds, flags: MessageFlags.Ephemeral });
   }
 }

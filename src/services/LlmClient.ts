@@ -2,6 +2,7 @@ import type { Logger } from "winston";
 import { generateText } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import type { BotConfig } from "../config.js";
+import { ServiceError } from "../logging/LogError.js";
 
 export type LlmPrompt = {
   system: string;
@@ -32,7 +33,7 @@ export class LlmClient {
 
   async complete(prompt: LlmPrompt): Promise<string> {
     if (!this.apiKey) {
-      throw new Error("LLM API key is not configured.");
+      throw new ServiceError("LLM API key is not configured.");
     }
 
     try {
@@ -44,12 +45,14 @@ export class LlmClient {
       });
       const content = text.trim();
       if (!content) {
-        throw new Error("LLM response was empty.");
+        throw new ServiceError("LLM response was empty.");
       }
       return content;
     } catch (error) {
-      this.logger.error("LLM request failed: %s", String(error));
-      throw error;
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      throw new ServiceError("LLM request failed.", { cause: error });
     }
   }
 }
