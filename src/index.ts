@@ -9,7 +9,7 @@ import { ReminderService } from "./services/ReminderService.js";
 import { WikipediaService } from "./services/WikipediaService.js";
 import { LlmClient } from "./services/LlmClient.js";
 import { AiBanService } from "./services/AiBanService.js";
-import { CooldownRegistry } from "./utils/cooldown.js";
+import { CooldownRegistry, GlobalCooldownRegistry } from "./utils/cooldown.js";
 import { SlowUserCommand } from "./commands/slash/SlowUserCommand.js";
 import { UnslowUserCommand } from "./commands/slash/UnslowUserCommand.js";
 import { AiBanCommand } from "./commands/slash/AiBanCommand.js";
@@ -18,6 +18,8 @@ import { LogErrorsCommand } from "./commands/slash/LogErrorsCommand.js";
 import { StatsCommand } from "./commands/slash/StatsCommand.js";
 import { HelpCommand } from "./commands/slash/HelpCommand.js";
 import { ModHelpCommand } from "./commands/slash/ModHelpCommand.js";
+import { CooldownSetCommand } from "./commands/slash/CooldownSetCommand.js";
+import { CooldownClearCommand } from "./commands/slash/CooldownClearCommand.js";
 import { AnswerCommand } from "./commands/message/AnswerCommand.js";
 import { AnswerDefinitiveCommand } from "./commands/message/AnswerDefinitiveCommand.js";
 import { QuestionCommand } from "./commands/message/QuestionCommand.js";
@@ -46,7 +48,9 @@ const reminderService = new ReminderService(db, logger, client);
 const aiBanService = new AiBanService(db);
 const wikipediaService = new WikipediaService();
 const llmClient = new LlmClient(config, logger);
-const llmCooldown = new CooldownRegistry(120);
+const globalCooldowns = new GlobalCooldownRegistry();
+const llmCooldown = new CooldownRegistry("llm", 120);
+globalCooldowns.register(llmCooldown);
 const startedAt = Date.now();
 const allowedGuildIds = new Set(config.guildIds);
 const isGuildAllowed = (guildId?: string | null): boolean => {
@@ -77,6 +81,16 @@ registry.registerSlash(
 );
 registry.registerSlash(
   new LogErrorsCommand({
+    allowedRoleIds: config.moderatorRoleIds,
+  }),
+);
+registry.registerSlash(
+  new CooldownSetCommand(globalCooldowns, {
+    allowedRoleIds: config.moderatorRoleIds,
+  }),
+);
+registry.registerSlash(
+  new CooldownClearCommand(globalCooldowns, {
     allowedRoleIds: config.moderatorRoleIds,
   }),
 );
@@ -112,6 +126,8 @@ registry.registerSlash(
       { name: "/aiban", description: "Block a user from LLM commands." },
       { name: "/aiunban", description: "Unblock a user from LLM commands." },
       { name: "/log", description: "Show recent error logs." },
+      { name: "/cooldownset", description: "Set a per-user cooldown override." },
+      { name: "/cooldownclear", description: "Clear a per-user cooldown override." },
     ],
     { allowedRoleIds: config.moderatorRoleIds },
   ),
