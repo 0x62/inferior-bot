@@ -16,7 +16,7 @@ export class LlmClient {
   private readonly provider: ReturnType<typeof createOpenAI>;
 
   constructor(config: BotConfig, logger: Logger) {
-    this.apiKey = config.llm.apiKey ?? process.env.OPENAI_API_KEY;
+    this.apiKey = config.llm.apiKey;
     this.model = config.llm.model;
     this.baseUrl = config.llm.baseUrl;
     this.logger = logger;

@@ -38,7 +38,7 @@ export const config: BotConfig = {
     baseUrl: process.env.LLM_BASE_URL ?? "https://api.openai.com/v1"
   },
   grok: {
-    apiKey: process.env.XAI_API_KEY ?? process.env.GROK_API_KEY,
+    apiKey: process.env.XAI_API_KEY,
     model: process.env.XAI_MODEL ?? "grok-4-fast",
     baseUrl: process.env.XAI_BASE_URL ?? "https://api.x.ai/v1"
   }
