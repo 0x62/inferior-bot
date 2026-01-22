@@ -44,7 +44,7 @@ export class GrokClient {
             content: `What is the context around this: ${message}`
           }
         ],
-        tools: [{ type: "web_search" }],
+        tools: [{ type: "live_search" }],
         tool_choice: "auto"
       })
     });
