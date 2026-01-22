@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const slowUsers = sqliteTable("slow_users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -27,3 +27,23 @@ export const aiBans = sqliteTable("ai_bans", {
   userId: text("user_id").notNull(),
   createdAt: integer("created_at").notNull()
 });
+
+export const cooldownOverrides = sqliteTable(
+  "cooldown_overrides",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    guildId: text("guild_id").notNull(),
+    userId: text("user_id").notNull(),
+    registryName: text("registry_name").notNull(),
+    cooldownSeconds: integer("cooldown_seconds").notNull(),
+    createdAt: integer("created_at").notNull(),
+    updatedAt: integer("updated_at").notNull()
+  },
+  (table) => ({
+    uniqueOverride: uniqueIndex("cooldown_overrides_unique").on(
+      table.guildId,
+      table.userId,
+      table.registryName
+    )
+  })
+);

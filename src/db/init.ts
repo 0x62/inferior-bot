@@ -51,6 +51,16 @@ export const initSqlite = (databasePath: string): Database.Database => {
       user_id TEXT NOT NULL,
       created_at INTEGER NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS cooldown_overrides (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      guild_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      registry_name TEXT NOT NULL,
+      cooldown_seconds INTEGER NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      UNIQUE (guild_id, user_id, registry_name)
+    );
   `);
   return db;
 };
