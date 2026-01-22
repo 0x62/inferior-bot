@@ -1,0 +1,11 @@
+.git
+.github
+.context
+node_modules
+data
+.env
+.env.*
+.wrangler
+npm-debug.log
+pnpm-debug.log
+.DS_Store
