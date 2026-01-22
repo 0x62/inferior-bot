@@ -20,8 +20,9 @@ export class QuestionCommand extends MessageCommand {
 
   async execute(context: MessageCommandContext): Promise<void> {
     const { message } = context;
-    if (message.reference?.messageId && message.channel.isTextBased()) {
-      const parent = await message.channel.messages
+    const channel = message.channel;
+    if (message.reference?.messageId && channel.isTextBased()) {
+      const parent = await channel.messages
         .fetch(message.reference.messageId)
         .catch(() => null);
       if (parent) {
@@ -30,7 +31,7 @@ export class QuestionCommand extends MessageCommand {
       }
     }
 
-    if (!message.channel.isTextBased()) return;
-    await message.channel.send(LINK);
+    if (!channel.isTextBased() || !("send" in channel)) return;
+    await channel.send(LINK);
   }
 }

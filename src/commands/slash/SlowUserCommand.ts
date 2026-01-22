@@ -24,7 +24,7 @@ export class SlowUserCommand extends SlashCommand {
     this.slowModeService = slowModeService;
   }
 
-  build(): SlashCommandBuilder {
+  build() {
     return new SlashCommandBuilder()
       .setName(this.name)
       .setDescription("Apply per-user slow mode restrictions.")
