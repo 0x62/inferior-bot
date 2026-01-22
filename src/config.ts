@@ -8,6 +8,7 @@ export type BotConfig = {
   llm: {
     apiKey?: string;
     model: string;
+    embeddingModel: string;
     baseUrl: string;
   };
 };
@@ -30,6 +31,7 @@ export const config: BotConfig = {
   llm: {
     apiKey: process.env.OPENAI_API_KEY,
     model: process.env.LLM_MODEL ?? "gpt-4o-mini",
+    embeddingModel: process.env.LLM_EMBEDDING_MODEL ?? "text-embedding-3-small",
     baseUrl: process.env.LLM_BASE_URL ?? "https://api.openai.com/v1"
   }
 };
