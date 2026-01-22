@@ -10,6 +10,7 @@ import { WikipediaService } from "./services/WikipediaService.js";
 import { LlmClient } from "./services/LlmClient.js";
 import { AiBanService } from "./services/AiBanService.js";
 import { GrokClient } from "./services/GrokClient.js";
+import { CooldownOverrideService } from "./services/CooldownOverrideService.js";
 import { CooldownRegistry, GlobalCooldownRegistry } from "./utils/cooldown.js";
 import { SlowUserCommand } from "./commands/slash/SlowUserCommand.js";
 import { UnslowUserCommand } from "./commands/slash/UnslowUserCommand.js";
@@ -52,6 +53,7 @@ const aiBanService = new AiBanService(db);
 const wikipediaService = new WikipediaService();
 const llmClient = new LlmClient(config, logger);
 const grokClient = new GrokClient(config, logger);
+const cooldownOverrideService = new CooldownOverrideService(db);
 const globalCooldowns = new GlobalCooldownRegistry();
 const llmCooldown = new CooldownRegistry("llm", 120);
 globalCooldowns.register(llmCooldown);
@@ -89,12 +91,12 @@ registry.registerSlash(
   }),
 );
 registry.registerSlash(
-  new CooldownSetCommand(globalCooldowns, {
+  new CooldownSetCommand(globalCooldowns, cooldownOverrideService, {
     allowedRoleIds: config.moderatorRoleIds,
   }),
 );
 registry.registerSlash(
-  new CooldownClearCommand(globalCooldowns, {
+  new CooldownClearCommand(globalCooldowns, cooldownOverrideService, {
     allowedRoleIds: config.moderatorRoleIds,
   }),
 );
@@ -161,6 +163,13 @@ registry.registerMessage(
 );
 
 client.once("clientReady", async () => {
+  try {
+    const overrides = await cooldownOverrideService.listOverridesForRegistry(llmCooldown.name);
+    llmCooldown.hydrateOverrides(overrides);
+    logger.info("Loaded %d cooldown overrides for %s", overrides.length, llmCooldown.name);
+  } catch (error) {
+    logger.warn("Failed to load cooldown overrides: %s", String(error));
+  }
   logger.info("Logged in as %s", client.user?.tag ?? "unknown");
   reminderService.start();
 

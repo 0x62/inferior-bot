@@ -41,7 +41,10 @@ export class CommandRegistry {
     }
 
     if (command.cooldownRegistry) {
-      const remainingMs = command.cooldownRegistry.getRemainingMs(interaction.user.id);
+      const remainingMs = command.cooldownRegistry.getRemainingMs(
+        interaction.user.id,
+        interaction.guildId
+      );
       if (remainingMs > 0) {
         const seconds = Math.ceil(remainingMs / 1000);
         await interaction.reply({
@@ -54,7 +57,7 @@ export class CommandRegistry {
         content: "✅ Processing...",
         flags: MessageFlags.Ephemeral
       });
-      command.cooldownRegistry.markUsed(interaction.user.id);
+      command.cooldownRegistry.markUsed(interaction.user.id, interaction.guildId);
     }
 
     const respond = async (options: InteractionReplyOptions | string) => {
@@ -83,13 +86,16 @@ export class CommandRegistry {
       }
 
       if (command.cooldownRegistry) {
-        const remainingMs = command.cooldownRegistry.getRemainingMs(message.author.id);
+        const remainingMs = command.cooldownRegistry.getRemainingMs(
+          message.author.id,
+          message.guildId
+        );
         if (remainingMs > 0) {
           await message.react("⏰").catch(() => null);
           return;
         }
         await message.react("✅").catch(() => null);
-        command.cooldownRegistry.markUsed(message.author.id);
+        command.cooldownRegistry.markUsed(message.author.id, message.guildId);
       }
 
       try {
