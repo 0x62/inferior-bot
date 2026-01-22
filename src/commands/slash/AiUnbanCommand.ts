@@ -12,7 +12,7 @@ export class AiUnbanCommand extends SlashCommand {
     super({
       name: "aiunban",
       allowedRoleIds: options.allowedRoleIds,
-      cooldownSeconds: options.cooldownSeconds
+      cooldownRegistry: options.cooldownRegistry
     });
     this.aiBanService = aiBanService;
   }

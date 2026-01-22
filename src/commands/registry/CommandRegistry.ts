@@ -4,7 +4,6 @@ import {
   type InteractionReplyOptions,
   type Message
 } from "discord.js";
-import { CooldownManager } from "../../utils/cooldown.js";
 import { buildMessageContext } from "../../utils/messageContext.js";
 import type { CommandContext } from "./types.js";
 import type { MessageCommand } from "../base/MessageCommand.js";
@@ -13,7 +12,6 @@ import type { SlashCommand } from "../base/SlashCommand.js";
 export class CommandRegistry {
   private readonly slashCommands = new Map<string, SlashCommand>();
   private readonly messageCommands: MessageCommand[] = [];
-  private readonly cooldowns = new CooldownManager();
 
   registerSlash(command: SlashCommand): void {
     this.slashCommands.set(command.name, command);
@@ -42,12 +40,8 @@ export class CommandRegistry {
       return;
     }
 
-    if (command.cooldownSeconds) {
-      const remainingMs = this.cooldowns.getRemainingMs(
-        command.name,
-        interaction.user.id,
-        command.cooldownSeconds
-      );
+    if (command.cooldownRegistry) {
+      const remainingMs = command.cooldownRegistry.getRemainingMs(interaction.user.id);
       if (remainingMs > 0) {
         const seconds = Math.ceil(remainingMs / 1000);
         await interaction.reply({
@@ -60,7 +54,7 @@ export class CommandRegistry {
         content: "✅ Processing...",
         flags: MessageFlags.Ephemeral
       });
-      this.cooldowns.markUsed(command.name, interaction.user.id);
+      command.cooldownRegistry.markUsed(interaction.user.id);
     }
 
     const respond = async (options: InteractionReplyOptions | string) => {
@@ -88,18 +82,14 @@ export class CommandRegistry {
         return;
       }
 
-      if (command.cooldownSeconds) {
-        const remainingMs = this.cooldowns.getRemainingMs(
-          command.name,
-          message.author.id,
-          command.cooldownSeconds
-        );
+      if (command.cooldownRegistry) {
+        const remainingMs = command.cooldownRegistry.getRemainingMs(message.author.id);
         if (remainingMs > 0) {
           await message.react("⏰").catch(() => null);
           return;
         }
         await message.react("✅").catch(() => null);
-        this.cooldowns.markUsed(command.name, message.author.id);
+        command.cooldownRegistry.markUsed(message.author.id);
       }
 
       try {

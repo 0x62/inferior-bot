@@ -9,6 +9,7 @@ import { ReminderService } from "./services/ReminderService.js";
 import { WikipediaService } from "./services/WikipediaService.js";
 import { LlmClient } from "./services/LlmClient.js";
 import { AiBanService } from "./services/AiBanService.js";
+import { CooldownRegistry } from "./utils/cooldown.js";
 import { SlowUserCommand } from "./commands/slash/SlowUserCommand.js";
 import { UnslowUserCommand } from "./commands/slash/UnslowUserCommand.js";
 import { AiBanCommand } from "./commands/slash/AiBanCommand.js";
@@ -45,6 +46,7 @@ const reminderService = new ReminderService(db, logger, client);
 const aiBanService = new AiBanService(db);
 const wikipediaService = new WikipediaService();
 const llmClient = new LlmClient(config, logger);
+const llmCooldown = new CooldownRegistry(120);
 const startedAt = Date.now();
 const allowedGuildIds = new Set(config.guildIds);
 const isGuildAllowed = (guildId?: string | null): boolean => {
@@ -109,20 +111,24 @@ registry.registerSlash(
       { name: "/unslowuser", description: "Remove per-user slow mode restrictions." },
       { name: "/aiban", description: "Block a user from LLM commands." },
       { name: "/aiunban", description: "Unblock a user from LLM commands." },
-      { name: "/logerrors", description: "Show recent error logs." },
+      { name: "/log", description: "Show recent error logs." },
     ],
     { allowedRoleIds: config.moderatorRoleIds },
   ),
 );
 
-registry.registerMessage(new AnswerCommand(llmClient, aiBanService, { cooldownSeconds: 60 }));
 registry.registerMessage(
-  new AnswerDefinitiveCommand(llmClient, aiBanService, { cooldownSeconds: 60 }),
+  new AnswerCommand(llmClient, aiBanService, { cooldownRegistry: llmCooldown }),
+);
+registry.registerMessage(
+  new AnswerDefinitiveCommand(llmClient, aiBanService, { cooldownRegistry: llmCooldown }),
 );
 registry.registerMessage(new QuestionCommand());
 registry.registerMessage(new WikiCommand(wikipediaService));
 registry.registerMessage(new RemindMeCommand(reminderService));
-registry.registerMessage(new AcronymCommand(llmClient, aiBanService, { cooldownSeconds: 60 }));
+registry.registerMessage(
+  new AcronymCommand(llmClient, aiBanService, { cooldownRegistry: llmCooldown }),
+);
 
 client.once("clientReady", async () => {
   logger.info("Logged in as %s", client.user?.tag ?? "unknown");
@@ -165,7 +171,7 @@ client.on("interactionCreate", async (interaction) => {
     logger.warn(
       "Ignored command from unapproved guild %s by %s",
       interaction.guildId ?? "unknown",
-      interaction.user.id
+      interaction.user.id,
     );
     return;
   }

@@ -10,7 +10,7 @@ export class QuestionCommand extends MessageCommand {
     super({
       name: "question",
       allowedRoleIds: options.allowedRoleIds,
-      cooldownSeconds: options.cooldownSeconds
+      cooldownRegistry: options.cooldownRegistry
     });
   }
 

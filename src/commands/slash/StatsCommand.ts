@@ -27,7 +27,7 @@ export class StatsCommand extends SlashCommand {
     super({
       name: "stats",
       allowedRoleIds: options.allowedRoleIds,
-      cooldownSeconds: options.cooldownSeconds
+      cooldownRegistry: options.cooldownRegistry
     });
     this.startedAt = startedAt;
   }

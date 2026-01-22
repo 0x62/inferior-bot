@@ -1,20 +1,19 @@
-export class CooldownManager {
-  private lastUsed = new Map<string, number>();
+export class CooldownRegistry {
+  private readonly cooldownMs: number;
+  private readonly lastUsed = new Map<string, number>();
 
-  private key(commandName: string, userId: string): string {
-    return `${commandName}:${userId}`;
+  constructor(cooldownSeconds: number) {
+    this.cooldownMs = Math.max(0, cooldownSeconds) * 1000;
   }
 
-  getRemainingMs(commandName: string, userId: string, cooldownSeconds: number): number {
-    const key = this.key(commandName, userId);
-    const last = this.lastUsed.get(key);
+  getRemainingMs(userId: string): number {
+    const last = this.lastUsed.get(userId);
     if (!last) return 0;
     const elapsed = Date.now() - last;
-    const cooldownMs = cooldownSeconds * 1000;
-    return elapsed >= cooldownMs ? 0 : cooldownMs - elapsed;
+    return elapsed >= this.cooldownMs ? 0 : this.cooldownMs - elapsed;
   }
 
-  markUsed(commandName: string, userId: string): void {
-    this.lastUsed.set(this.key(commandName, userId), Date.now());
+  markUsed(userId: string): void {
+    this.lastUsed.set(userId, Date.now());
   }
 }

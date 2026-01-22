@@ -20,7 +20,7 @@ export class HelpCommand extends SlashCommand {
     super({
       name: "help",
       allowedRoleIds: options.allowedRoleIds,
-      cooldownSeconds: options.cooldownSeconds
+      cooldownRegistry: options.cooldownRegistry
     });
     this.sections = sections;
   }

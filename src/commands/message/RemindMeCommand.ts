@@ -15,7 +15,7 @@ export class RemindMeCommand extends MessageCommand {
     super({
       name: "remind_me",
       allowedRoleIds: options.allowedRoleIds,
-      cooldownSeconds: options.cooldownSeconds
+      cooldownRegistry: options.cooldownRegistry
     });
     this.reminderService = reminderService;
   }

@@ -17,7 +17,7 @@ export class AcronymCommand extends MessageCommand {
     super({
       name: "acronym",
       allowedRoleIds: options.allowedRoleIds,
-      cooldownSeconds: options.cooldownSeconds,
+      cooldownRegistry: options.cooldownRegistry,
       requiresReply: true
     });
     this.llm = llm;

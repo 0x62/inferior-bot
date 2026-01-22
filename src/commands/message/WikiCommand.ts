@@ -15,7 +15,7 @@ export class WikiCommand extends MessageCommand {
     super({
       name: "wiki",
       allowedRoleIds: options.allowedRoleIds,
-      cooldownSeconds: options.cooldownSeconds
+      cooldownRegistry: options.cooldownRegistry
     });
     this.wikipedia = wikipedia;
   }
