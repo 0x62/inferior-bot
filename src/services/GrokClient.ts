@@ -1,21 +1,16 @@
 import type { Logger } from "winston";
 import type { BotConfig } from "../config.js";
 
-export type LlmPrompt = {
-  system: string;
-  user: string;
-};
-
-export class LlmClient {
+export class GrokClient {
   private readonly apiKey?: string;
   private readonly model: string;
   private readonly baseUrl: string;
   private readonly logger: Logger;
 
   constructor(config: BotConfig, logger: Logger) {
-    this.apiKey = config.llm.apiKey;
-    this.model = config.llm.model;
-    this.baseUrl = config.llm.baseUrl;
+    this.apiKey = config.grok.apiKey;
+    this.model = config.grok.model;
+    this.baseUrl = config.grok.baseUrl;
     this.logger = logger;
   }
 
@@ -23,9 +18,9 @@ export class LlmClient {
     return Boolean(this.apiKey);
   }
 
-  async complete(prompt: LlmPrompt): Promise<string> {
+  async fetchContext(message: string): Promise<string> {
     if (!this.apiKey) {
-      throw new Error("LLM API key is not configured.");
+      throw new Error("Grok API key is not configured.");
     }
 
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
@@ -36,18 +31,28 @@ export class LlmClient {
       },
       body: JSON.stringify({
         model: this.model,
-        temperature: 0.4,
+        temperature: 0.3,
         messages: [
-          { role: "system", content: prompt.system },
-          { role: "user", content: prompt.user }
-        ]
+          {
+            role: "system",
+            content:
+              "Provide concise, confident background context using web search when helpful. " +
+              "Do not mention that you searched or reference the user or message directly."
+          },
+          {
+            role: "user",
+            content: `What is the context around this: ${message}`
+          }
+        ],
+        tools: [{ type: "web_search" }],
+        tool_choice: "auto"
       })
     });
 
     if (!response.ok) {
       const text = await response.text();
-      this.logger.error("LLM request failed: %s", text);
-      throw new Error(`LLM request failed with status ${response.status}`);
+      this.logger.error("Grok request failed: %s", text);
+      throw new Error(`Grok request failed with status ${response.status}`);
     }
 
     const data = (await response.json()) as {
@@ -56,10 +61,9 @@ export class LlmClient {
 
     const content = data.choices?.[0]?.message?.content?.trim();
     if (!content) {
-      throw new Error("LLM response was empty.");
+      throw new Error("Grok response was empty.");
     }
 
     return content;
   }
-
 }
