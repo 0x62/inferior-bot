@@ -1,4 +1,6 @@
 import type { Logger } from "winston";
+import { generateText } from "ai";
+import { createXai } from "@ai-sdk/xai";
 import type { BotConfig } from "../config.js";
 
 export class GrokClient {
@@ -6,12 +8,17 @@ export class GrokClient {
   private readonly model: string;
   private readonly baseUrl: string;
   private readonly logger: Logger;
+  private readonly provider: ReturnType<typeof createXai>;
 
   constructor(config: BotConfig, logger: Logger) {
     this.apiKey = config.grok.apiKey;
     this.model = config.grok.model;
     this.baseUrl = config.grok.baseUrl;
     this.logger = logger;
+    this.provider = createXai({
+      apiKey: this.apiKey,
+      baseURL: this.baseUrl
+    });
   }
 
   isConfigured(): boolean {
@@ -23,47 +30,27 @@ export class GrokClient {
       throw new Error("Grok API key is not configured.");
     }
 
-    const response = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${this.apiKey}`
-      },
-      body: JSON.stringify({
-        model: this.model,
+    try {
+      const { text } = await generateText({
+        model: this.provider.responses(this.model),
+        prompt: `What is the context around this: ${message}`,
+        tools: {
+          web_search: this.provider.tools.webSearch()
+        },
+        toolChoice: "auto",
         temperature: 0.3,
-        messages: [
-          {
-            role: "system",
-            content:
-              "Provide concise, confident background context using web search when helpful. " +
-              "Do not mention that you searched or reference the user or message directly."
-          },
-          {
-            role: "user",
-            content: `What is the context around this: ${message}`
-          }
-        ],
-        tools: [{ type: "live_search" }],
-        tool_choice: "auto"
-      })
-    });
-
-    if (!response.ok) {
-      const text = await response.text();
-      this.logger.error("Grok request failed: %s", text);
-      throw new Error(`Grok request failed with status ${response.status}`);
+        system:
+          "Provide concise, confident background context using web search when helpful. " +
+          "Do not mention that you searched or reference the user or message directly."
+      });
+      const content = text.trim();
+      if (!content) {
+        throw new Error("Grok response was empty.");
+      }
+      return content;
+    } catch (error) {
+      this.logger.error("Grok request failed: %s", String(error));
+      throw error;
     }
-
-    const data = (await response.json()) as {
-      choices?: { message?: { content?: string } }[];
-    };
-
-    const content = data.choices?.[0]?.message?.content?.trim();
-    if (!content) {
-      throw new Error("Grok response was empty.");
-    }
-
-    return content;
   }
 }
