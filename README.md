@@ -1,6 +1,6 @@
-# Harare Discord Bot
+# InferiorBot Discord Bot
 
-Harare is a moderation + utility Discord bot built with TypeScript and discord.js. It is a shameless imitation of QualityBot from the Engineering Students Discord, and it is still under active development.
+InferiorBot is a moderation + utility Discord bot built with TypeScript and discord.js. It is a shameless imitation of QualityBot from the Engineering Students Discord, and it is still under active development.
 
 ## Setup
 
