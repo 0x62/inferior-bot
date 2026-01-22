@@ -21,6 +21,7 @@ import { HelpCommand } from "./commands/slash/HelpCommand.js";
 import { ModHelpCommand } from "./commands/slash/ModHelpCommand.js";
 import { CooldownSetCommand } from "./commands/slash/CooldownSetCommand.js";
 import { CooldownClearCommand } from "./commands/slash/CooldownClearCommand.js";
+import { ReplyCommand } from "./commands/slash/ReplyCommand.js";
 import { AnswerCommand } from "./commands/message/AnswerCommand.js";
 import { AnswerDefinitiveCommand } from "./commands/message/AnswerDefinitiveCommand.js";
 import { QuestionCommand } from "./commands/message/QuestionCommand.js";
@@ -97,6 +98,11 @@ registry.registerSlash(
     allowedRoleIds: config.moderatorRoleIds,
   }),
 );
+registry.registerSlash(
+  new ReplyCommand({
+    allowedRoleIds: config.moderatorRoleIds,
+  }),
+);
 registry.registerSlash(new StatsCommand(startedAt));
 registry.registerSlash(
   new HelpCommand([
@@ -132,6 +138,7 @@ registry.registerSlash(
       { name: "/log", description: "Show recent error logs." },
       { name: "/cooldownset", description: "Set a per-user cooldown override." },
       { name: "/cooldownclear", description: "Clear a per-user cooldown override." },
+      { name: "/reply", description: "Reply as the bot to a message." },
     ],
     { allowedRoleIds: config.moderatorRoleIds },
   ),
