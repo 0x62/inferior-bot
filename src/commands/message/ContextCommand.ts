@@ -86,9 +86,9 @@ export class ContextCommand extends MessageCommand {
     }
 
     const systemPrompt =
-      "You provide concise context for a user's message using recent news when available. " +
-      "If no news items are provided, use general knowledge to give additional context. " +
-      "Be brief and neutral.";
+      "Provide concise background context using recent news when available. " +
+      "If no news items are provided, use general knowledge to add helpful context. " +
+      "Respond directly and confidently without referencing the message or the user.";
 
     const userPrompt = [
       `Message: ${target.content}`,

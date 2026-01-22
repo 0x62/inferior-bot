@@ -7,32 +7,23 @@ import type { LlmClient } from "../../services/LlmClient.js";
 import type { NewsService, NewsItem } from "../../services/NewsService.js";
 import type { AiBanService } from "../../services/AiBanService.js";
 
-const MAX_ITEMS = 8;
+const MAX_ITEMS = 10;
 
-const truncate = (text: string, max = 300): string => {
+const truncate = (text: string, max = 900): string => {
   if (text.length <= max) return text;
   return `${text.slice(0, max - 1).trim()}…`;
 };
 
-const formatItemTitle = (item: NewsItem): string => {
+const buildItemEmbed = (item: NewsItem): EmbedBuilder => {
+  const embed = new EmbedBuilder().setTitle(item.title).setColor(0x1d7aa2);
   if (item.link) {
-    return `[${item.title}](${item.link})`;
+    embed.setURL(item.link);
   }
-  return item.title;
-};
-
-const formatItemValue = (item: NewsItem): string => {
-  const parts: string[] = [];
-  if (item.summary) {
-    parts.push(truncate(item.summary));
-  }
+  embed.setDescription(item.summary ? truncate(item.summary) : "No summary available.");
   if (item.image) {
-    parts.push(item.image);
+    embed.setImage(item.image);
   }
-  if (parts.length === 0) {
-    parts.push("No summary available.");
-  }
-  return parts.join("\n");
+  return embed;
 };
 
 export class NewsCommand extends SlashCommand {
@@ -105,21 +96,11 @@ export class NewsCommand extends SlashCommand {
       }
 
       const top = scored.slice(0, MAX_ITEMS);
-      const embed = new EmbedBuilder()
-        .setTitle(`News matches for "${query}"`)
-        .setDescription("Top BBC headlines ranked by relevance.")
-        .setColor(0x1d7aa2);
-
-      const lead = top.find((item) => item.image);
-      if (lead?.image) {
-        embed.setThumbnail(lead.image);
-      }
-
-      top.forEach((item) => {
-        embed.addFields({ name: formatItemTitle(item), value: formatItemValue(item) });
+      const embeds = top.map(buildItemEmbed);
+      await context.respond({
+        content: `Top news matches for "${query}":`,
+        embeds
       });
-
-      await context.respond({ embeds: [embed] });
       return;
     }
 
@@ -133,20 +114,10 @@ export class NewsCommand extends SlashCommand {
     }
 
     const top = items.slice(0, MAX_ITEMS);
-    const embed = new EmbedBuilder()
-      .setTitle("US & Canada News")
-      .setDescription("Latest BBC headlines and summaries.")
-      .setColor(0x1d7aa2);
-
-    const lead = top.find((item) => item.image);
-    if (lead?.image) {
-      embed.setThumbnail(lead.image);
-    }
-
-    top.forEach((item) => {
-      embed.addFields({ name: formatItemTitle(item), value: formatItemValue(item) });
+    const embeds = top.map(buildItemEmbed);
+    await context.respond({
+      content: "US & Canada news:",
+      embeds
     });
-
-    await context.respond({ embeds: [embed] });
   }
 }
