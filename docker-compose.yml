@@ -11,10 +11,13 @@ services:
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
       DISCORD_GUILD_IDS: ${DISCORD_GUILD_IDS}
       MODERATOR_ROLE_IDS: ${MODERATOR_ROLE_IDS}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      XAI_API_KEY: ${XAI_API_KEY}
       DATABASE_PATH: /data/bot.db
       LOG_LEVEL: info
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
       LLM_MODEL: gpt-4o-mini
       LLM_BASE_URL: https://api.openai.com/v1
+      XAI_MODEL: grok-4-fast
+      XAI_BASE_URL: https://api.x.ai/v1
     volumes:
       - ./data:/data
