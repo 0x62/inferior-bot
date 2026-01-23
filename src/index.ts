@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { Client, GatewayIntentBits, Partials, REST, Routes } from "discord.js";
+import type { GuildMember } from "discord.js";
 import { config, validateConfig } from "./config.js";
 import { Logger } from "./logging/Logger.js";
 import { createDb } from "./db/index.js";
@@ -31,6 +32,7 @@ import { WikiCommand } from "./commands/message/WikiCommand.js";
 import { RemindMeCommand } from "./commands/message/RemindMeCommand.js";
 import { AcronymCommand } from "./commands/message/AcronymCommand.js";
 import { ContextCommand } from "./commands/message/ContextCommand.js";
+import { PollCommand } from "./commands/message/PollCommand.js";
 
 const logger = Logger.init(config.logLevel);
 validateConfig();
@@ -41,10 +43,11 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildMessageReactions,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.DirectMessages,
   ],
-  partials: [Partials.Channel],
+  partials: [Partials.Channel, Partials.Message, Partials.Reaction, Partials.User],
 });
 
 const registry = new CommandRegistry();
@@ -68,6 +71,12 @@ const isGuildAllowed = (guildId?: string | null): boolean => {
   if (!guildId) return true;
   if (allowedGuildIds.size === 0) return true;
   return allowedGuildIds.has(guildId);
+};
+
+const isModerator = (member: GuildMember | null): boolean => {
+  if (config.moderatorRoleIds.length === 0) return true;
+  if (!member) return false;
+  return member.roles.cache.some((role) => config.moderatorRoleIds.includes(role.id));
 };
 
 registry.registerSlash(
@@ -126,7 +135,8 @@ registry.registerSlash(
         { name: "answer", description: "Reply to a message with `answer` to get an LLM response." },
         { name: "answer_definitive", description: "Reply with a terse, definitive LLM response." },
         { name: "acronym", description: "Reply to a message to expand acronyms via LLM." },
-        { name: "context", description: "Reply to a message to explain it using recent news." },
+        { name: "context", description: "Reply to a message to explain it using web search." },
+        { name: "poll", description: "Reply to a message to create a poll." },
         { name: "question", description: "Post the 'don't ask to ask' link." },
         { name: "wiki <query>", description: "Search Wikipedia and respond with the top result." },
         { name: "remind me <time>", description: "Schedule a reminder using natural language." },
@@ -165,6 +175,9 @@ registry.registerMessage(
 );
 registry.registerMessage(
   new ContextCommand(grokClient, aiBanService, { cooldownRegistry: llmCooldown }),
+);
+registry.registerMessage(
+  new PollCommand(llmClient, aiBanService, { cooldownRegistry: llmCooldown }),
 );
 
 client.once("clientReady", async () => {
@@ -236,6 +249,33 @@ client.on("messageCreate", async (message) => {
   if (blocked) return;
 
   await registry.handleMessage(message, {
+    client,
+    logger,
+    config,
+    db,
+    commandUsage: commandUsageService
+  });
+});
+
+client.on("messageReactionAdd", async (reaction, user) => {
+  if (user.bot) return;
+  if (reaction.partial) {
+    await reaction.fetch().catch(() => null);
+  }
+
+  const message = reaction.message.partial
+    ? await reaction.message.fetch().catch(() => null)
+    : reaction.message;
+  if (!message) return;
+  if (reaction.emoji.name !== "⏰") return;
+  if (!isGuildAllowed(message.guildId)) return;
+
+  const guild = message.guild ?? (message.guildId ? await client.guilds.fetch(message.guildId).catch(() => null) : null);
+  if (!guild) return;
+  const member = await guild.members.fetch(user.id).catch(() => null);
+  if (!isModerator(member)) return;
+
+  await registry.handleCooldownBypass(message, {
     client,
     logger,
     config,
