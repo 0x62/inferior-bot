@@ -8,7 +8,7 @@ import { buildMessageContext } from "../../utils/messageContext.js";
 import type { CommandContext } from "./types.js";
 import type { MessageCommand } from "../base/MessageCommand.js";
 import type { SlashCommand } from "../base/SlashCommand.js";
-import { LoggableError } from "../../logging/LogError.js";
+import { LoggableError, MessageError, CommandError } from "../../logging/LogError.js";
 
 type NormalizedError = {
   name: string;
@@ -92,6 +92,12 @@ const serializeMessageParams = (message: Message): string =>
 export class CommandRegistry {
   private readonly slashCommands = new Map<string, SlashCommand>();
   private readonly messageCommands: MessageCommand[] = [];
+  private readonly cooldownBypass = new Map<
+    string,
+    { command: MessageCommand; createdAt: number }
+  >();
+
+  private readonly cooldownBypassTtlMs = 60 * 60 * 1000;
 
   registerSlash(command: SlashCommand): void {
     this.slashCommands.set(command.name, command);
@@ -166,7 +172,11 @@ export class CommandRegistry {
     try {
       await command.execute({ ...context, interaction, respond });
     } catch (error) {
-      const normalized = normalizeError(error, "Slash command failed.");
+      const wrapped =
+        error instanceof LoggableError
+          ? error
+          : new CommandError("Slash command failed.", { cause: error });
+      const normalized = normalizeError(wrapped, "Slash command failed.");
       const underlying = normalizeUnderlying(normalized.cause);
       context.logger.error(`${normalized.name}: ${normalized.message}`, {
         errorName: normalized.name,
@@ -213,53 +223,106 @@ export class CommandRegistry {
         );
         if (remainingMs > 0) {
           await message.react("⏰").catch(() => null);
+          this.trackCooldownBypass(message.id, command);
           return;
         }
         await message.react("✅").catch(() => null);
         command.cooldownRegistry.markUsed(message.author.id, message.guildId);
       }
 
-      await context.commandUsage
-        .recordUsage({
-          guildId: message.guildId ?? "dm",
-          userId: message.author.id,
-          commandName: command.name,
-          commandType: "message",
-          parameters: serializeMessageParams(message),
-          channelId: message.channelId ?? null,
-          messageId: message.id
-        })
-        .catch((error) => {
-          context.logger.warn("Failed to record command usage: %s", String(error));
-        });
-
-      try {
-        const messageContext = await buildMessageContext(message, {
-          historyDepth: 6,
-          replyDepth: 6
-        });
-
-        await command.execute({ ...context, message, messageContext });
-      } catch (error) {
-        const normalized = normalizeError(error, "Message command failed.");
-        const underlying = normalizeUnderlying(normalized.cause);
-        context.logger.error(`${normalized.name}: ${normalized.message}`, {
-          errorName: normalized.name,
-          errorMessage: normalized.message,
-          underlyingErrorName: underlying?.name,
-          underlyingErrorMessage: underlying?.message,
-          commandName: command.name,
-          commandType: "message",
-          invokerId: message.author.id,
-          invokerUsername: message.author.tag ?? message.author.username,
-          invocationGuildId: message.guildId ?? undefined,
-          invocationChannelId: message.channelId ?? undefined,
-          invocationMessageId: message.id,
-          invocationContent: message.content
-        });
-        await message.react("⚠️").catch(() => null);
-      }
+      await this.runMessageCommand(command, message, context);
       return;
+    }
+  }
+
+  async handleCooldownBypass(message: Message, context: CommandContext): Promise<boolean> {
+    const entry = this.cooldownBypass.get(message.id);
+    if (!entry) return false;
+
+    if (Date.now() - entry.createdAt > this.cooldownBypassTtlMs) {
+      this.cooldownBypass.delete(message.id);
+      return false;
+    }
+
+    this.cooldownBypass.delete(message.id);
+    const command = entry.command;
+
+    if (command.cooldownRegistry) {
+      command.cooldownRegistry.markUsed(message.author.id, message.guildId);
+      await message.react("✅").catch(() => null);
+    }
+
+    await this.runMessageCommand(command, message, context);
+    return true;
+  }
+
+  private trackCooldownBypass(messageId: string, command: MessageCommand): void {
+    const entry = { command, createdAt: Date.now() };
+    this.cooldownBypass.set(messageId, entry);
+    setTimeout(() => {
+      const current = this.cooldownBypass.get(messageId);
+      if (current?.createdAt === entry.createdAt) {
+        this.cooldownBypass.delete(messageId);
+      }
+    }, this.cooldownBypassTtlMs);
+  }
+
+  private async runMessageCommand(
+    command: MessageCommand,
+    message: Message,
+    context: CommandContext
+  ): Promise<void> {
+    await context.commandUsage
+      .recordUsage({
+        guildId: message.guildId ?? "dm",
+        userId: message.author.id,
+        commandName: command.name,
+        commandType: "message",
+        parameters: serializeMessageParams(message),
+        channelId: message.channelId ?? null,
+        messageId: message.id
+      })
+      .catch((error) => {
+        context.logger.warn("Failed to record command usage: %s", String(error));
+      });
+
+    try {
+      const messageContext = await buildMessageContext(message, {
+        historyDepth: 6,
+        replyDepth: 6
+      });
+
+      await command.execute({ ...context, message, messageContext });
+    } catch (error) {
+      const wrapped =
+        error instanceof LoggableError
+          ? error
+          : new MessageError("Message command failed.", { cause: error });
+      const normalized = normalizeError(wrapped, "Message command failed.");
+      const underlying = normalizeUnderlying(normalized.cause);
+      context.logger.error(`${normalized.name}: ${normalized.message}`, {
+        errorName: normalized.name,
+        errorMessage: normalized.message,
+        underlyingErrorName: underlying?.name,
+        underlyingErrorMessage: underlying?.message,
+        commandName: command.name,
+        commandType: "message",
+        invokerId: message.author.id,
+        invokerUsername: message.author.tag ?? message.author.username,
+        invocationGuildId: message.guildId ?? undefined,
+        invocationChannelId: message.channelId ?? undefined,
+        invocationMessageId: message.id,
+        invocationContent: message.content
+      });
+      await message.react("⚠️").catch(() => null);
+
+      const checkReaction = message.reactions.cache.find(
+        (reaction) => reaction.emoji.name === "✅"
+      );
+      const botId = context.client.user?.id;
+      if (checkReaction && botId) {
+        await checkReaction.users.remove(botId).catch(() => null);
+      }
     }
   }
 }
