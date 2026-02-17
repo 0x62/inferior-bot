@@ -54,7 +54,7 @@ const registry = new CommandRegistry();
 const cooldownOverrideService = new CooldownOverrideService(db);
 const commandUsageService = new CommandUsageService(db);
 const globalCooldowns = new GlobalCooldownRegistry();
-const llmCooldown = new CooldownRegistry("llm", 120);
+const llmCooldown = new CooldownRegistry("llm", 30);
 globalCooldowns.register(llmCooldown);
 
 const slowModeService = new SlowModeService(db, logger);
@@ -237,7 +237,7 @@ client.on("interactionCreate", async (interaction) => {
     logger,
     config,
     db,
-    commandUsage: commandUsageService
+    commandUsage: commandUsageService,
   });
 });
 
@@ -253,7 +253,7 @@ client.on("messageCreate", async (message) => {
     logger,
     config,
     db,
-    commandUsage: commandUsageService
+    commandUsage: commandUsageService,
   });
 });
 
@@ -270,7 +270,9 @@ client.on("messageReactionAdd", async (reaction, user) => {
   if (reaction.emoji.name !== "⏰") return;
   if (!isGuildAllowed(message.guildId)) return;
 
-  const guild = message.guild ?? (message.guildId ? await client.guilds.fetch(message.guildId).catch(() => null) : null);
+  const guild =
+    message.guild ??
+    (message.guildId ? await client.guilds.fetch(message.guildId).catch(() => null) : null);
   if (!guild) return;
   const member = await guild.members.fetch(user.id).catch(() => null);
   if (!isModerator(member)) return;
@@ -280,7 +282,7 @@ client.on("messageReactionAdd", async (reaction, user) => {
     logger,
     config,
     db,
-    commandUsage: commandUsageService
+    commandUsage: commandUsageService,
   });
 });
 
